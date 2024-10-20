@@ -1,5 +1,5 @@
 #include "tests.h"
-
+#include <vector>
 // 练习1，实现库函数strlen
 int my_strlen(char *str) {
     /**
@@ -7,7 +7,14 @@ int my_strlen(char *str) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    return 0;
+    int lenth=0;
+    while(*str!='\0')
+    {
+
+        lenth++;
+        str++;
+    }
+    return lenth;
 }
 
 
@@ -19,6 +26,20 @@ void my_strcat(char *str_1, char *str_2) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+ char *ptr = str_1;
+    while(*ptr != '\0') {
+        ptr++;
+    }
+
+    // 从str_2复制字符到str_1的末尾，直到遇到str_2的结束符'\0'
+    while (*str_2 != '\0') {
+        *ptr = *str_2; // 复制字符
+        ptr++;          // 移动str_1的指针
+        str_2++;        // 移动str_2的指针
+    }
+
+    // 添加字符串结束符'\0'到str_1的末尾
+    *ptr = '\0';;
 }
 
 
@@ -31,7 +52,39 @@ char* my_strstr(char *s, char *p) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    return 0;
+    if (*p == '\0') {
+        return nullptr;
+    }
+
+    char first_char = *p;
+    char *s_temp = s;
+
+    // 遍历s，直到遇到空字符
+    while (*s_temp) {
+        // 如果当前字符与p的首字符匹配，进行子字符串匹配
+        if (*s_temp == first_char) {
+            char *s_match = s_temp;
+            char *p_temp = p;
+
+            // 检查s中的子字符串是否与p匹配
+            while (*p_temp) {
+                if (*s_match != *p_temp) {
+                    break;
+                }
+                s_match++;
+                p_temp++;
+            }
+
+            // 如果p已经完全匹配，返回匹配的起始位置
+            if (*p_temp == '\0') {
+                return s_temp;
+            }
+        }
+
+        // 移动到s的下一个字符
+        s_temp++;
+    }
+    return nullptr; // 如果没有找到，返回nullptr
 }
 
 
@@ -75,7 +128,8 @@ char* my_strstr(char *s, char *p) {
 
 
 // 练习4，将彩色图片(rgb)转化为灰度图片
-void rgb2gray(float *in, float *out, int h, int w) {
+void rgb2gray(float *in, float *out, int h, int w) 
+{
     /**
      * 编写这个函数，将一张彩色图片转化为灰度图片。以下是各个参数的含义：
      * (1) float *in:  指向彩色图片对应的内存区域（或者说数组）首地址的指针。
@@ -96,9 +150,29 @@ void rgb2gray(float *in, float *out, int h, int w) {
      */
 
     // IMPLEMENT YOUR CODE HERE
-    // ...
+    //遍历整个图像数组，对每一个数组索引进行操作
+    for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+            // 计算当前像素在in数组中的索引
+            int index = (i * w + j) * 3; // 每个像素3个值（RGB）
+
+            // 读取RGB值
+            float r = in[index];     // 红色分量
+            float g = in[index + 1]; // 绿色通道
+            float b = in[index + 2]; // 蓝色分量
+
+            // 计算灰度值
+            float gray = 0.1140 * b + 0.5870 * g + 0.2989 * r;
+
+            // 将灰度值写入out数组
+            out[i * w + j] = gray;
+        }
+    }
 }
 
+    
+
+    // ...
 // 练习5，实现图像处理算法 resize：缩小或放大图像
 void resize(float *in, float *out, int h, int w, int c, float scale) {
     /**
@@ -196,10 +270,61 @@ void resize(float *in, float *out, int h, int w, int c, float scale) {
      *        所以需要对其进行边界检查
      */
 
+    //计算出新图像的长和宽
     int new_h = h * scale, new_w = w * scale;
     // IMPLEMENT YOUR CODE HERE
+    
+    //遍历整个图像，先行后列
+    for (int y = 0; y < new_h; y++) {
+        for (int x = 0; x < new_w; x++) {
+            
+            //获得原图像的近似坐标
+            float x0 = x / scale;
+            float y0 = y / scale;
 
+            // 获取四个邻居点的坐标
+            // 这样表示：（x1,y1)   (x2,y1)
+            //           (x1,y2)   (x2,y2)
+            //母点
+            int x1 = static_cast<int>(x0);
+            int y1 = static_cast<int>(y0);
+            //判断邻居点的坐标是否位于原图像的范围内并根据判断结果进行赋值
+            int x2,y2;
+            if(x1<w)
+            {x2=x1+1;}
+            else{x2=x1;}
+            if(y1<h)
+            {y2=y1+1;}
+            else{y2=y1;}
+            
+
+            // 计算插值的权重
+            float dx = x0 - x1;
+            float dy = y0 - y1;
+
+            // 对每个颜色通道进行双线性插值
+            for (int i = 0; i < c; i++) {
+                // 计算四个邻居点的颜色值
+                // 我这样表示： (x1,y1)   (x2,y1)
+                //             (x1,y2)   (x2,y2)
+                float p1 = in[(y1 * w + x1) * c + i];
+                float p2 = in[(y2 * w + x1) * c + i];
+                float p3 = in[(y1 * w + x2) * c + i];
+                float p4 = in[(y2 * w + x2) * c + i];
+
+                // 应用双线性插值公式
+                float q = (p1 * (1 - dx) * (1 - dy)) + (p2 * dx * (1 - dy)) +
+                          (p3 * (1 - dx) * dy) + (p4 * dx * dy);
+
+                // 写入结果
+                int ans = (y * new_w + x) * c + i;
+                out[ans] = q;
+            }
+        }
+    }
 }
+
+
 
 
 // 练习6，实现图像处理算法：直方图均衡化
@@ -221,4 +346,35 @@ void hist_eq(float *in, int h, int w) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    // (1) 初始化直方图
+    std::vector<int> hist(256, 0);
+    // (2) 计算直方图
+    for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+            int pixel = static_cast<int>(in[i * w + j]);
+            ++hist[pixel];
+        }
+    }
+    // (3) 计算累积分布函数（CDF）
+    int totalPixels = h * w;
+    std::vector<float> cdf(256, 0);
+    for (int i = 0; i < 256; ++i) {
+        if (i > 0) {
+            cdf[i] = cdf[i - 1] + static_cast<float>(hist[i]) / totalPixels;
+        } else {
+            cdf[i] = static_cast<float>(hist[i]) / totalPixels;
+        }
+    }
+    // (4) 使用CDF映射原始图像的像素值
+    // 创建一个临时数组来存储均衡化后的像素值
+    std::vector<float> out(h * w, 0.0f);
+    for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+            int pixel = static_cast<int>(in[i * w + j]);
+            float eqPixel = cdf[pixel] * 255.0f;
+            out[i * w + j] = eqPixel;
+        }
+    }
+    // 将临时数组的值复制回in数组
+    std::copy(out.begin(), out.end(), in);
 }
